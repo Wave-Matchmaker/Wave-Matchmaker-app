@@ -149,6 +149,7 @@ Vite + React + TypeScript + Tailwind v4. Demo tools fetch live public GitHub dat
 npm install
 npm run dev        # start dev server
 npm run typecheck # typecheck only
+npm test          # run unit tests (vitest)
 npm run build     # typecheck + production build (outputs to dist/)
 ```
 

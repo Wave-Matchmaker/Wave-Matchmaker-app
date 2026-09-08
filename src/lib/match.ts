@@ -57,7 +57,7 @@ export function extractUserSkills(
     for (const t of r.topics ?? []) skills.add(norm(t));
   }
 
-  const bioText = [user.bio ?? "", user.company ?? ""].join(" ");
+  const bioText = [user.bio ?? "", user.company ?? ""].join(" ").toLowerCase();
   for (const [lang, aliases] of Object.entries(LABEL_SKILL_MAP)) {
     if (aliases.some((a) => bioText.includes(a))) skills.add(lang);
   }
@@ -71,7 +71,7 @@ export function extractIssueSignals(issue: GithubIssue): Set<string> {
 
   for (const l of issue.labels ?? []) signals.add(norm(l.name));
 
-  const text = `${issue.title} ${issue.body ?? ""}`.slice(0, 4000);
+  const text = `${issue.title} ${issue.body ?? ""}`.slice(0, 4000).toLowerCase();
   for (const [lang, aliases] of Object.entries(LABEL_SKILL_MAP)) {
     if (aliases.some((a) => text.includes(a))) signals.add(lang);
   }
@@ -172,13 +172,29 @@ export function suggestComplexity(issue: GithubIssue): ComplexitySuggestion {
   let score = 0;
 
   const labels = (issue.labels ?? []).map((l) => norm(l.name));
-  if (labels.some((l) => /good first issue|beginner|easy|starter/.test(l))) {
+  const beginnerLabel = labels.some((l) => /good first issue|beginner|easy|starter/.test(l));
+  const complexLabel = labels.some((l) => /hard|complex|heavy|architecture/.test(l));
+  if (beginnerLabel) {
     score -= 2;
     signals.push("labeled beginner-friendly");
   }
-  if (labels.some((l) => /hard|complex|heavy|architecture/.test(l))) {
+  if (complexLabel) {
     score += 2;
     signals.push("labeled complex");
+  }
+
+  const bodyLen = (issue.body ?? "").length;
+  const hasHeavyKeywords = /breaking|refactor|migrat|rewrite|architect/.test(text);
+  const hasCosmeticKeywords = /typo|docs|readme|comment|rename|css|spelling/.test(text);
+
+  // No labels, no body, and no keyword signals means there's nothing to scope by:
+  // don't let the low comment count alone imply "trivial". Default to Medium.
+  if (!beginnerLabel && !complexLabel && bodyLen === 0 && !hasHeavyKeywords && !hasCosmeticKeywords) {
+    return {
+      level: "Medium",
+      confidence: 0.4,
+      signals: ["No strong signals found — default to Medium."],
+    };
   }
 
   if (issue.comments >= 15) {
@@ -189,7 +205,6 @@ export function suggestComplexity(issue: GithubIssue): ComplexitySuggestion {
     signals.push("few comments (likely well-scoped)");
   }
 
-  const bodyLen = (issue.body ?? "").length;
   if (bodyLen > 2500) {
     score += 1;
     signals.push("long issue body");
@@ -198,11 +213,11 @@ export function suggestComplexity(issue: GithubIssue): ComplexitySuggestion {
     signals.push("short, focused issue body");
   }
 
-  if (/breaking|refactor|migrat|rewrite|architect/.test(text)) {
+  if (hasHeavyKeywords) {
     score += 1;
     signals.push("refactor/migration keywords");
   }
-  if (/typo|docs|readme|comment|rename|css|spelling/.test(text)) {
+  if (hasCosmeticKeywords) {
     score -= 1;
     signals.push("docs/cosmetic keywords");
   }
