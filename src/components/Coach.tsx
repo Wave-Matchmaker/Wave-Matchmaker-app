@@ -55,7 +55,8 @@ function buildPlan(candidates: Candidate[], slots: number, orgCap: number) {
 export default function Coach({ onBack }: { onBack: () => void }) {
   const [username, setUsername] = useState("");
   const [slotsInput, setSlotsInput] = useState("3");
-  const [orgCapInput, setOrgCapInput] = useState("1");
+  // Wave caps at 4 assignments per org per Wave (Drips docs); use as the default.
+  const [orgCapInput, setOrgCapInput] = useState("4");
   const [urls, setUrls] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +223,7 @@ export default function Coach({ onBack }: { onBack: () => void }) {
             min={0}
             value={orgCapInput}
             onChange={(e) => setOrgCapInput(e.target.value)}
-            placeholder="Max apps per org (blank = none)"
+            placeholder="Max picks per org (blank = none)"
             className={inputCls}
           />
         </div>

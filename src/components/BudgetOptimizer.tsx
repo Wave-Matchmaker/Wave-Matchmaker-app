@@ -85,12 +85,13 @@ function buildPlan(candidates: Candidate[], budget: number, repoCap: number): Pl
 export default function BudgetOptimizer({ onBack }: { onBack: () => void }) {
   const [scope, setScope] = useState<"org" | "repo">("org");
   const [target, setTarget] = useState("");
-  const [budgetInput, setBudgetInput] = useState("10000");
+  const [budgetInput, setBudgetInput] = useState("3000");
   const [repoCapInput, setRepoCapInput] = useState("");
+  // Current Stellar Wave complexity values (Drips docs: points-and-rewards).
   const [points, setPoints] = useState<Record<Level, string>>({
-    Trivial: "500",
-    Medium: "1500",
-    High: "4000",
+    Trivial: "100",
+    Medium: "150",
+    High: "200",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,8 +237,8 @@ export default function BudgetOptimizer({ onBack }: { onBack: () => void }) {
 
         <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <p className="w-full text-xs text-slate-500">
-            Points per complexity level — defaults are editable placeholders; set them to your
-            Wave's current values.
+            Points per complexity level — defaults match the current Stellar Wave values
+            (Trivial 100 / Medium 150 / High 200). Edit if your program differs.
           </p>
           {LEVELS.map((level) => (
             <label key={level} className="flex items-center gap-2 text-sm text-slate-300">

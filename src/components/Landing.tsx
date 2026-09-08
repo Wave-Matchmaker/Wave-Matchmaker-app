@@ -11,14 +11,6 @@ type WaitlistStatus =
   | "not-configured"
   | "error";
 
-function VerifyBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-400 ring-1 ring-amber-500/30">
-      {children}
-    </span>
-  );
-}
-
 export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) => void }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<WaitlistStatus>("idle");
@@ -78,6 +70,39 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
         </div>
       </section>
 
+      {/* Verified program numbers */}
+      <section className="border-b border-slate-800">
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { value: "$75K", label: "reward pool per Stellar Wave since Wave 4 (Waves 1–3: $60K)" },
+              { value: "8", label: "Stellar Waves run since January 2026" },
+              { value: "251,981", label: "issues on the Stellar program — 737 repos · 442 orgs" },
+              { value: "3,000+", label: "PRs merged in Wave 1 alone (~600 contributors)" },
+            ].map((s) => (
+              <div key={s.value}>
+                <p className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-4xl font-extrabold text-transparent">
+                  {s.value}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 text-xs text-slate-500">
+            From the live{" "}
+            <a
+              href="https://www.drips.network/wave/stellar"
+              target="_blank"
+              rel="noreferrer"
+              className="text-cyan-400 hover:underline"
+            >
+              Stellar Wave page
+            </a>{" "}
+            and the Drips blog — verified Sep 8, 2026.
+          </p>
+        </div>
+      </section>
+
       {/* Problem */}
       <section className="border-y border-slate-800 bg-slate-900/50">
         <div className="mx-auto max-w-6xl px-4 py-16">
@@ -87,17 +112,17 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
               {
                 icon: "🚧",
                 title: "Application limits",
-                body: "Capped pending applications and per-org caps mean every application you spend is a bet.",
+                body: "Up to 15 pending applications, and max 4 assignments per org per Wave — every application you spend is a scarce bet.",
               },
               {
                 icon: "💰",
                 title: "Points budgets",
-                body: "Maintainers allocate a fixed points budget per Wave — mispriced complexity wastes it.",
+                body: "Maintainers work inside per-repo and per-org points budgets each Wave — a mispriced complexity level wastes it.",
               },
               {
                 icon: "🕳️",
-                title: "No visibility",
-                body: "Without a reliable leaderboard, nobody knows where they actually stand.",
+                title: "No public leaderboard",
+                body: "Drips sunset the public leaderboard in Wave 4 (Apr 2026) — outside the app, nobody sees where they stand.",
               },
             ].map((c) => (
               <div
@@ -321,18 +346,35 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
         )}
       </section>
 
-      {/* Honesty note mirroring the README checklist */}
+      {/* Verified numbers & caveats */}
       <section className="mx-auto max-w-3xl px-4 pb-16">
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-sm text-amber-200/90">
-          <p className="font-semibold">Before we publish numbers:</p>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">
+          <p className="font-semibold text-white">Where the numbers come from</p>
           <p className="mt-2">
-            All program stats on this page are placeholders. Live numbers ({" "}
-            <VerifyBadge>application limits</VerifyBadge>{" "}
-            <VerifyBadge>reward pool</VerifyBadge>{" "}
-            <VerifyBadge>leaderboard status</VerifyBadge> ) get filled in from
-            the Drips dashboard before launch — see the checklist in{" "}
-            <code>README.md</code>.
+            Stats on this page were pulled from Drips' live pages on Sep 8, 2026. Application
+            limits, complexity points, and budget caps are per-program configuration — confirm
+            your program's exact values on your Drips dashboard.
           </p>
+          <ul className="mt-4 space-y-1.5 text-slate-400">
+            {[
+              ["Contributor limits & leaderboard", "https://docs.drips.network/wave/contributors/solving-issues-and-earning-rewards/"],
+              ["Complexity → 100 / 150 / 200 pts", "https://docs.drips.network/wave/points-and-rewards/"],
+              ["Per-repo & per-org points budgets", "https://docs.drips.network/wave/maintainers/points-budgets/"],
+              ["Live Stellar Wave program (waves, pools, scale)", "https://www.drips.network/wave/stellar"],
+              ["Public leaderboard sunset (Wave 4 changelog)", "https://www.drips.network/blog/posts/wave-4-changelog"],
+            ].map(([label, href]) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-cyan-400 hover:underline"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </main>
