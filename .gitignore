@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+*.log
+
+# local env / secrets
+.env
+.env.*
+!.env.example
