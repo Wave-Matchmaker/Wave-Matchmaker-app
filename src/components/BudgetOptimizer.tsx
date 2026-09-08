@@ -246,7 +246,6 @@ export default function BudgetOptimizer({ onBack }: { onBack: () => void }) {
               <input
                 type="number"
                 min={1}
-                step={100}
                 value={points[level]}
                 onChange={(e) => setPoints((p) => ({ ...p, [level]: e.target.value }))}
                 className="w-28 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white outline-none focus:border-cyan-500"
