@@ -86,3 +86,38 @@ Wave Matchmaker aims to be the default strategy layer for anyone seriously parti
 - [ ] Confirm whether the public leaderboard is actually gone or still active
 - [ ] Source or remove the "$100M+ ecosystem" claim
 - [ ] Label revenue projections as projections, not results
+
+---
+
+## Local development
+
+Vite + React + TypeScript + Tailwind v4. Demo tools fetch live public GitHub data
+(unauthenticated, ~60 req/hr core API + separate search quota).
+
+```bash
+npm install
+npm run dev        # start dev server
+npm run typecheck # typecheck only
+npm run build     # typecheck + production build (outputs to dist/)
+```
+
+Views: **Match Score** (score a dev against one issue), **Coach** (plan which of
+several issues to apply to given remaining slots), **Budget** (maintainer points-budget
+allocator across an org/repo's open issues). All scoring is a transparent v0 heuristic,
+not an LLM call.
+
+### Waitlist storage (Supabase)
+
+The waitlist form persists to a Supabase Postgres table. Until configured it shows a
+clear "not connected" message instead of pretending to save.
+
+1. Create a project and copy the project URL + anon key (Dashboard → Project Settings →
+   API) into a local `.env` (see `.env.example`):
+   ```
+   VITE_SUPABASE_URL=...
+   VITE_SUPABASE_ANON_KEY=...
+   ```
+2. Run `supabase/setup.sql` once in the Supabase SQL Editor. It creates the `waitlist`
+   table and an insert-only RLS policy: anon clients can add rows but never read,
+   update, or delete them.
+3. Submit a test email on the landing page and check it appears in Table Editor.

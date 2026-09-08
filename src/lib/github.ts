@@ -114,3 +114,40 @@ export async function fetchRepoDetail(
   );
   return { language: r.language, topics: r.topics ?? [], description: r.description };
 }
+
+export interface GithubIssueSearchItem extends GithubIssue {
+  reactions: { total_count: number };
+}
+
+interface SearchIssuesResponse {
+  total_count: number;
+  items: GithubIssueSearchItem[];
+}
+
+/**
+ * Search a repo or org's open issues via the GitHub search API (separate,
+ * more generous rate limit bucket from the core REST API).
+ */
+export async function searchOpenIssues(
+  scope: "org" | "repo",
+  value: string,
+  perPage = 100,
+): Promise<{ total: number; items: GithubIssueSearchItem[] }> {
+  const qualifier =
+    scope === "org"
+      ? `org:${value}`
+      : `repo:${value}`;
+  const q = `${qualifier} is:issue is:open`;
+  const res = await get<SearchIssuesResponse>(
+    `/search/issues?q=${encodeURIComponent(q)}&sort=updated&order=desc&per_page=${perPage}`,
+  );
+  return { total: res.total_count, items: res.items };
+}
+
+/** Derive "owner/repo" from an issue's repository_url or html_url. */
+export function repoFromUrl(url: string): string | null {
+  const m = url.match(/repos\/([\w.-]+\/[\w.-]+)(?:\/|$)/);
+  if (m) return m[1];
+  const h = url.match(/^https?:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/issues\//i);
+  return h ? h[1] : null;
+}

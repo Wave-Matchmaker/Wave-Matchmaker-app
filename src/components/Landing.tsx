@@ -1,4 +1,15 @@
 import { useState } from "react";
+import { joinWaitlist } from "../lib/waitlist";
+
+type DemoView = "match" | "coach" | "budget";
+
+type WaitlistStatus =
+  | "idle"
+  | "saving"
+  | "done"
+  | "duplicate"
+  | "not-configured"
+  | "error";
 
 function VerifyBadge({ children }: { children: React.ReactNode }) {
   return (
@@ -8,9 +19,30 @@ function VerifyBadge({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
+export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) => void }) {
   const [email, setEmail] = useState("");
-  const [joined, setJoined] = useState(false);
+  const [status, setStatus] = useState<WaitlistStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function handleJoin(e: React.FormEvent) {
+    e.preventDefault();
+    const address = email.trim().toLowerCase();
+    if (!address) return;
+    setStatus("saving");
+    setErrorMsg(null);
+    const res = await joinWaitlist(address);
+    if (res.ok) {
+      setStatus("done");
+      setEmail("");
+    } else if (res.reason === "duplicate") {
+      setStatus("duplicate");
+    } else if (res.reason === "not-configured") {
+      setStatus("not-configured");
+    } else {
+      setStatus("error");
+      setErrorMsg(res.message ?? "Couldn't save your email — please try again.");
+    }
+  }
 
   return (
     <main>
@@ -32,7 +64,7 @@ export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
-            onClick={onTryDemo}
+            onClick={() => onNavigate("match")}
             className="rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400"
           >
             Try the Match Score demo →
@@ -105,6 +137,12 @@ export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
                 your points and impact without a public leaderboard.
               </li>
             </ul>
+            <button
+              onClick={() => onNavigate("match")}
+              className="mt-5 rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+            >
+              Try the Match Score demo →
+            </button>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h3 className="text-lg font-semibold text-blue-300">
@@ -124,6 +162,60 @@ export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
                 your most active and skilled contributors across repos.
               </li>
             </ul>
+            <button
+              onClick={() => onNavigate("budget")}
+              className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+            >
+              Try the Budget Optimizer demo →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Demos */}
+      <section className="border-y border-slate-800 bg-slate-900/50">
+        <div className="mx-auto max-w-6xl px-4 py-16">
+          <h2 className="text-2xl font-bold sm:text-3xl">Try it live</h2>
+          <p className="mt-2 max-w-2xl text-slate-400">
+            Working demos on real GitHub data — no login, transparent v0 heuristics.
+          </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+                For developers
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Match Score + Strategy Coach
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Score one issue, or paste several and get an application plan that respects
+                your remaining slots.
+              </p>
+              <button
+                onClick={() => onNavigate("coach")}
+                className="mt-5 rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+              >
+                Try the Coach demo →
+              </button>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-300">
+                For maintainers
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Points Budget Optimizer
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Point it at your org or repo and see which open issues are worth funding
+                within this Wave's budget.
+              </p>
+              <button
+                onClick={() => onNavigate("budget")}
+                className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Budget demo →
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -184,18 +276,32 @@ export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
         <p className="mt-3 text-slate-400">
           Join the waitlist and shape what we build first.
         </p>
-        {joined ? (
+        {status === "done" && (
           <p className="mt-8 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-4 text-emerald-300">
-            You're on the list 🎉 (demo — connect a backend to persist signups)
+            You're on the list 🎉
           </p>
-        ) : (
-          <form
-            className="mt-8 flex flex-col gap-3 sm:flex-row"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (email.trim()) setJoined(true);
-            }}
-          >
+        )}
+        {status === "duplicate" && (
+          <p className="mt-8 rounded-xl border border-amber-500/40 bg-amber-500/10 px-6 py-4 text-amber-300">
+            Already on the list — we've got you.
+          </p>
+        )}
+        {status === "error" && (
+          <p className="mt-8 rounded-xl border border-rose-500/40 bg-rose-500/10 px-6 py-4 text-sm text-rose-300">
+            {errorMsg}
+          </p>
+        )}
+        {status === "not-configured" && (
+          <p className="mt-8 rounded-xl border border-slate-700 bg-slate-900 px-6 py-4 text-sm text-slate-400">
+            Waitlist storage isn't connected yet — set{" "}
+            <code className="text-cyan-300">VITE_SUPABASE_URL</code> and{" "}
+            <code className="text-cyan-300">VITE_SUPABASE_ANON_KEY</code> in{" "}
+            <code className="text-cyan-300">.env</code>, then run the SQL in{" "}
+            <code className="text-cyan-300">supabase/setup.sql</code>.
+          </p>
+        )}
+        {status !== "done" && status !== "duplicate" && (
+          <form className="mt-8 flex flex-col gap-3 sm:flex-row" onSubmit={handleJoin}>
             <input
               type="email"
               required
@@ -206,9 +312,10 @@ export default function Landing({ onTryDemo }: { onTryDemo: () => void }) {
             />
             <button
               type="submit"
-              className="rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400"
+              disabled={status === "saving"}
+              className="rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
             >
-              Join waitlist
+              {status === "saving" ? "Joining…" : "Join waitlist"}
             </button>
           </form>
         )}
