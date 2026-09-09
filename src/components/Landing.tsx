@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { joinWaitlist } from "../lib/waitlist";
 
-type DemoView = "match" | "coach" | "budget";
+type DemoView = "match" | "coach" | "budget" | "complexity" | "heatmaps" | "analytics";
 
 type WaitlistStatus =
   | "idle"
@@ -162,12 +162,20 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
                 your points and impact without a public leaderboard.
               </li>
             </ul>
-            <button
-              onClick={() => onNavigate("match")}
-              className="mt-5 rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
-            >
-              Try the Match Score demo →
-            </button>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                onClick={() => onNavigate("match")}
+                className="rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+              >
+                Try the Match Score demo →
+              </button>
+              <button
+                onClick={() => onNavigate("analytics")}
+                className="rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+              >
+                Try the Analytics demo →
+              </button>
+            </div>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h3 className="text-lg font-semibold text-blue-300">
@@ -187,12 +195,26 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
                 your most active and skilled contributors across repos.
               </li>
             </ul>
-            <button
-              onClick={() => onNavigate("budget")}
-              className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
-            >
-              Try the Budget Optimizer demo →
-            </button>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                onClick={() => onNavigate("budget")}
+                className="rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Budget Optimizer demo →
+              </button>
+              <button
+                onClick={() => onNavigate("complexity")}
+                className="rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Complexity Assistant demo →
+              </button>
+              <button
+                onClick={() => onNavigate("heatmaps")}
+                className="rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Heatmaps demo →
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -204,7 +226,7 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
           <p className="mt-2 max-w-2xl text-slate-400">
             Working demos on real GitHub data — no login, transparent v0 heuristics.
           </p>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
               <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
                 For developers
@@ -239,6 +261,60 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
                 className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
               >
                 Try the Budget demo →
+              </button>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-300">
+                For maintainers
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Complexity Assistant
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Paste the issues you're about to price and get a suggested
+                Trivial / Medium / High rating with the reasoning behind it.
+              </p>
+              <button
+                onClick={() => onNavigate("complexity")}
+                className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Complexity demo →
+              </button>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+                For developers
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Private Analytics
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Estimate your own points and impact over a wave window — your
+                private view, no public leaderboard needed.
+              </p>
+              <button
+                onClick={() => onNavigate("analytics")}
+                className="mt-5 rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+              >
+                Try the Analytics demo →
+              </button>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-300">
+                For maintainers
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Contributor Heatmaps
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                See your most active and skilled contributors across your repos,
+                ranked with a contribution heatmap.
+              </p>
+              <button
+                onClick={() => onNavigate("heatmaps")}
+                className="mt-5 rounded-lg bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300 ring-1 ring-blue-500/30 transition hover:bg-blue-500/25"
+              >
+                Try the Heatmaps demo →
               </button>
             </div>
           </div>

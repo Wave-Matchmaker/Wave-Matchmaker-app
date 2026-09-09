@@ -46,7 +46,13 @@ function Bar({ label, value, max }: { label: string; value: number; max: number 
   );
 }
 
-export default function MatchScore({ onBack }: { onBack: () => void }) {
+export default function MatchScore({
+  onBack,
+  onOpenComplexity,
+}: {
+  onBack: () => void;
+  onOpenComplexity: () => void;
+}) {
   const [username, setUsername] = useState("");
   const [issueUrl, setIssueUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -187,6 +193,12 @@ export default function MatchScore({ onBack }: { onBack: () => void }) {
               <p className="mt-4 text-xs text-slate-500">
                 Your skills detected: {[...extractUserSkills(result.user, result.repos)].slice(0, 8).join(", ") || "none"}
               </p>
+              <button
+                onClick={onOpenComplexity}
+                className="mt-4 rounded-lg bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+              >
+                Rate more issues with the Complexity Assistant →
+              </button>
             </div>
           </div>
         </div>

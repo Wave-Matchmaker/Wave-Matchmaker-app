@@ -50,9 +50,15 @@ class GithubError extends Error {
 }
 
 async function get<T>(path: string): Promise<T> {
+  return (await getMaybe<T>(path)) as T;
+}
+
+/** Like get, but returns null on 204 No Content instead of failing to parse. */
+async function getMaybe<T>(path: string): Promise<T | null> {
   const res = await fetch(`${API}${path}`, {
     headers: { Accept: "application/vnd.github+json" },
   });
+  if (res.status === 204) return null;
   if (!res.ok) {
     if (res.status === 403 || res.status === 429) {
       throw new GithubError(
@@ -105,6 +111,32 @@ export async function fetchIssue(
   );
 }
 
+export interface GithubContributor {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  contributions: number;
+}
+
+/** Most recently-pushed public repos for an org (forks not filtered here). */
+export async function fetchOrgRepos(org: string, max = 10): Promise<GithubRepo[]> {
+  return get<GithubRepo[]>(
+    `/orgs/${encodeURIComponent(org)}/repos?sort=pushed&per_page=${max}`,
+  );
+}
+
+/** Top contributors of a repo (commits to the default branch). Empty on 204. */
+export async function fetchContributors(
+  owner: string,
+  repo: string,
+  max = 10,
+): Promise<GithubContributor[]> {
+  const data = await getMaybe<GithubContributor[]>(
+    `/repos/${owner}/${repo}/contributors?per_page=${max}`,
+  );
+  return data ?? [];
+}
+
 export async function fetchRepoDetail(
   owner: string,
   repo: string,
@@ -117,6 +149,10 @@ export async function fetchRepoDetail(
 
 export interface GithubIssueSearchItem extends GithubIssue {
   reactions: { total_count: number };
+  closed_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  pull_request?: { merged_at?: string | null };
 }
 
 interface SearchIssuesResponse {
@@ -138,6 +174,23 @@ export async function searchOpenIssues(
       ? `org:${value}`
       : `repo:${value}`;
   const q = `${qualifier} is:issue is:open`;
+  const res = await get<SearchIssuesResponse>(
+    `/search/issues?q=${encodeURIComponent(q)}&sort=updated&order=desc&per_page=${perPage}`,
+  );
+  return { total: res.total_count, items: res.items };
+}
+
+/**
+ * Search a user's merged PRs merged between two dates (search API bucket,
+ * separate from the core REST limit).
+ */
+export async function searchMergedPrs(
+  username: string,
+  since: string, // YYYY-MM-DD
+  until: string, // YYYY-MM-DD
+  perPage = 100,
+): Promise<{ total: number; items: GithubIssueSearchItem[] }> {
+  const q = `author:${username} is:pr is:merged merged:${since}..${until}`;
   const res = await get<SearchIssuesResponse>(
     `/search/issues?q=${encodeURIComponent(q)}&sort=updated&order=desc&per_page=${perPage}`,
   );

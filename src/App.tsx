@@ -3,14 +3,20 @@ import Landing from "./components/Landing";
 import MatchScore from "./components/MatchScore";
 import Coach from "./components/Coach";
 import BudgetOptimizer from "./components/BudgetOptimizer";
+import Complexity from "./components/Complexity";
+import Heatmaps from "./components/Heatmaps";
+import Analytics from "./components/Analytics";
 
-export type View = "landing" | "match" | "coach" | "budget";
+export type View = "landing" | "match" | "coach" | "budget" | "complexity" | "heatmaps" | "analytics";
 
 const NAV: { view: View; label: string }[] = [
   { view: "landing", label: "Home" },
   { view: "match", label: "Match Score" },
   { view: "coach", label: "Coach" },
   { view: "budget", label: "Budget" },
+  { view: "complexity", label: "Complexity" },
+  { view: "heatmaps", label: "Heatmaps" },
+  { view: "analytics", label: "Analytics" },
 ];
 
 export default function App() {
@@ -45,9 +51,17 @@ export default function App() {
       </nav>
 
       {view === "landing" && <Landing onNavigate={setView} />}
-      {view === "match" && <MatchScore onBack={() => setView("landing")} />}
+      {view === "match" && (
+        <MatchScore
+          onBack={() => setView("landing")}
+          onOpenComplexity={() => setView("complexity")}
+        />
+      )}
       {view === "coach" && <Coach onBack={() => setView("landing")} />}
       {view === "budget" && <BudgetOptimizer onBack={() => setView("landing")} />}
+      {view === "complexity" && <Complexity onBack={() => setView("landing")} />}
+      {view === "heatmaps" && <Heatmaps onBack={() => setView("landing")} />}
+      {view === "analytics" && <Analytics onBack={() => setView("landing")} />}
 
       <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
         Wave Matchmaker — an unofficial community tool. Not affiliated with
