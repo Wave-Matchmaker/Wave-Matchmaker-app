@@ -20,6 +20,14 @@ function getClient(): SupabaseClient | null {
   return client;
 }
 
+/**
+ * Simple email sanity check. Used to validate the form in JS so bad
+ * addresses are rejected even when native browser validation is bypassed.
+ */
+export function emailIsValid(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 export type JoinResult =
   | { ok: true }
   | { ok: false; reason: "not-configured" | "duplicate" | "error"; message?: string };

@@ -158,9 +158,10 @@ issues to apply to given remaining slots), **Budget** (maintainer points-budget 
 across an org/repo's open issues), **Complexity** (maintainer tool that suggests a
 Trivial / Medium / High rating for pasted issues), **Heatmaps** (maintainer view of the most
 active/skilled contributors across an org's or repo's public history), **Analytics**
-(developer tool estimating your own points/impact from merged PRs in a wave window). All
-scoring is a transparent v0 heuristic, not an LLM call. The Budget, Complexity, and Analytics
-tools default to the current Stellar Wave complexity values (100 / 150 / 200 pts).
+(developer tool estimating your own points/impact from merged PRs in a wave window, with a
+previous-period comparison and CSV export). All scoring is a transparent v0 heuristic, not an
+LLM call. The Budget, Complexity, and Analytics tools default to the current Stellar Wave
+complexity values (100 / 150 / 200 pts).
 
 ### Waitlist storage (Supabase)
 

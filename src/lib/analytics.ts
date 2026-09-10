@@ -86,6 +86,37 @@ export function buildTimeline(
   });
 }
 
+/**
+ * The window of the same length immediately before [start, end] (UTC), or
+ * null if the inputs are invalid.
+ */
+export function previousWindow(
+  start: string,
+  end: string,
+): { start: string; end: string } | null {
+  const startMs = new Date(`${start}T00:00:00Z`).getTime();
+  const endMs = new Date(`${end}T00:00:00Z`).getTime();
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs > endMs) {
+    return null;
+  }
+  const len = Math.round((endMs - startMs) / DAY) + 1; // inclusive days
+  const prevEndMs = startMs - DAY;
+  const prevStartMs = prevEndMs - (len - 1) * DAY;
+  return {
+    start: new Date(prevStartMs).toISOString().slice(0, 10),
+    end: new Date(prevEndMs).toISOString().slice(0, 10),
+  };
+}
+
+/** Serialize PR estimates to CSV (header + one row per PR, quoted titles). */
+export function prsToCsv(prs: PrEstimate[]): string {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = prs.map((p) =>
+    [p.repo, String(p.number), esc(p.title), p.level, String(p.points), p.mergedAt].join(","),
+  );
+  return ["repo,number,title,level,points,merged_at", ...rows].join("\n");
+}
+
 export function summarizePrs(prs: PrEstimate[]): PrSummary {
   const levelCounts = LEVELS.map((level) => ({
     level,

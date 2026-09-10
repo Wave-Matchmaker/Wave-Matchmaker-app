@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTimeline,
+  prsToCsv,
+  previousWindow,
   summarizePrs,
   type PrEstimate,
 } from "./analytics";
@@ -65,6 +67,46 @@ describe("buildTimeline", () => {
   it("returns [] for an invalid window", () => {
     expect(buildTimeline([pr("2026-08-24", 100)], "2026-08-30", "2026-08-24")).toEqual([]);
     expect(buildTimeline([], "not-a-date", "2026-08-24")).toEqual([]);
+  });
+});
+
+describe("previousWindow", () => {
+  it("shifts an 8-day window back by exactly one period", () => {
+    expect(previousWindow("2026-08-24", "2026-08-31")).toEqual({
+      start: "2026-08-16",
+      end: "2026-08-23",
+    });
+  });
+
+  it("handles a one-day window", () => {
+    expect(previousWindow("2026-08-24", "2026-08-24")).toEqual({
+      start: "2026-08-23",
+      end: "2026-08-23",
+    });
+  });
+
+  it("returns null for an invalid window", () => {
+    expect(previousWindow("2026-08-30", "2026-08-24")).toBeNull();
+  });
+});
+
+describe("prsToCsv", () => {
+  it("writes a header and one row per PR", () => {
+    const csv = prsToCsv([pr("2026-08-24T10:00:00Z", 100, "Trivial", "o/r")]);
+    expect(csv).toBe(
+      'repo,number,title,level,points,merged_at\no/r,1,"t",Trivial,100,2026-08-24T10:00:00Z',
+    );
+  });
+
+  it("quotes titles containing commas or quotes", () => {
+    const p = pr("2026-08-24", 150, "Medium", "o/r");
+    p.title = 'Fix "weird", bug';
+    const csv = prsToCsv([p]);
+    expect(csv).toContain('"Fix ""weird"", bug"');
+  });
+
+  it("returns just the header for an empty list", () => {
+    expect(prsToCsv([])).toBe("repo,number,title,level,points,merged_at");
   });
 });
 

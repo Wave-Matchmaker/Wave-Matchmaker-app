@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { joinWaitlist } from "../lib/waitlist";
+import { emailIsValid, joinWaitlist } from "../lib/waitlist";
 
 type DemoView = "match" | "coach" | "budget" | "complexity" | "heatmaps" | "analytics";
 
@@ -19,7 +19,16 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     const address = email.trim().toLowerCase();
-    if (!address) return;
+    if (!address) {
+      setStatus("error");
+      setErrorMsg("Please enter your email address.");
+      return;
+    }
+    if (!emailIsValid(address)) {
+      setStatus("error");
+      setErrorMsg("That doesn't look like a valid email address.");
+      return;
+    }
     setStatus("saving");
     setErrorMsg(null);
     const res = await joinWaitlist(address);
@@ -66,6 +75,33 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
             className="rounded-xl border border-slate-700 px-6 py-3 font-semibold text-slate-200 transition hover:border-slate-500"
           >
             Join the waitlist
+          </a>
+        </div>
+        <p className="mt-6 text-sm text-slate-400">
+          <a
+            href="#demos"
+            className="underline-offset-4 hover:text-white hover:underline"
+          >
+            Browse all six tools ↓
+          </a>
+        </p>
+      </section>
+
+      {/* Next wave banner */}
+      <section className="border-y border-slate-800 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-transparent">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-4 text-center text-sm">
+          <p className="text-slate-300">
+            📅 <strong className="text-white">No Wave is live right now.</strong>{" "}
+            The next Stellar Wave is expected in late September 2026 — prep your
+            applications and points budget before it starts.
+          </p>
+          <a
+            href="https://www.drips.network/wave/stellar"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-cyan-300 hover:underline"
+          >
+            Track the live page →
           </a>
         </div>
       </section>
@@ -220,11 +256,11 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
       </section>
 
       {/* Demos */}
-      <section className="border-y border-slate-800 bg-slate-900/50">
+      <section id="demos" className="border-y border-slate-800 bg-slate-900/50">
         <div className="mx-auto max-w-6xl px-4 py-16">
           <h2 className="text-2xl font-bold sm:text-3xl">Try it live</h2>
           <p className="mt-2 max-w-2xl text-slate-400">
-            Working demos on real GitHub data — no login, transparent v0 heuristics.
+            Six tools on live GitHub data — no login, nothing to install.
           </p>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -318,6 +354,11 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
               </button>
             </div>
           </div>
+          <p className="mt-6 text-xs text-slate-500">
+            All scoring is a transparent v0 heuristic — deterministic and
+            explainable, not an LLM call. Heavy use is subject to GitHub's
+            unauthenticated API rate limits.
+          </p>
         </div>
       </section>
 
@@ -368,6 +409,10 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
               </div>
             ))}
           </div>
+          <p className="mt-6 text-xs text-slate-500">
+            Everything live today is free. Developer Pro and Maintainer Pro are
+            planned tiers — join the waitlist to hear when they launch.
+          </p>
         </div>
       </section>
 
@@ -375,7 +420,12 @@ export default function Landing({ onNavigate }: { onNavigate: (view: DemoView) =
       <section id="waitlist" className="mx-auto max-w-2xl px-4 py-20 text-center">
         <h2 className="text-2xl font-bold sm:text-3xl">Get early access</h2>
         <p className="mt-3 text-slate-400">
-          Join the waitlist and shape what we build first.
+          Developers: get first access to unlimited matches, the strategy coach,
+          and private analytics.
+        </p>
+        <p className="mt-1 text-slate-400">
+          Maintainers: tell us your points-budget pain points — it shapes what we
+          build first.
         </p>
         {status === "done" && (
           <p className="mt-8 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-4 text-emerald-300">

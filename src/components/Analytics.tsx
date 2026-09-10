@@ -1,7 +1,17 @@
 import { useMemo, useState } from "react";
-import { buildTimeline, summarizePrs, type PrEstimate } from "../lib/analytics";
+import {
+  buildTimeline,
+  prsToCsv,
+  previousWindow,
+  summarizePrs,
+  type PrEstimate,
+} from "../lib/analytics";
 import { LEVELS, type ComplexityLevel } from "../lib/complexity";
-import { repoFromUrl, searchMergedPrs } from "../lib/github";
+import {
+  repoFromUrl,
+  searchMergedPrs,
+  type GithubIssueSearchItem,
+} from "../lib/github";
 import { suggestComplexity } from "../lib/match";
 import { inputCls, LevelChip } from "./ui";
 
@@ -16,11 +26,49 @@ function parseNumber(s: string): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
+function buildPrs(
+  items: GithubIssueSearchItem[],
+  levelPoints: Record<ComplexityLevel, number>,
+): PrEstimate[] {
+  const prs: PrEstimate[] = items.map((it) => {
+    const c = suggestComplexity(it);
+    return {
+      repo: repoFromUrl(it.repository_url ?? it.html_url) ?? "unknown",
+      number: it.number,
+      title: it.title,
+      html_url: it.html_url,
+      level: c.level,
+      points: levelPoints[c.level],
+      mergedAt: it.pull_request?.merged_at ?? it.closed_at ?? "",
+    };
+  });
+  prs.sort((a, b) => (a.mergedAt < b.mergedAt ? 1 : -1));
+  return prs;
+}
+
+function downloadCsv(prs: PrEstimate[], filename: string) {
+  const blob = new Blob([prsToCsv(prs)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+interface PrevResult {
+  prs: PrEstimate[];
+  total: number;
+  start: string;
+  end: string;
+}
+
 interface AnalyticsResult {
   prs: PrEstimate[];
   total: number; // search total (may exceed the 100 fetched)
   start: string;
   end: string;
+  prev: PrevResult | null;
 }
 
 export default function Analytics({ onBack }: { onBack: () => void }) {
@@ -36,6 +84,7 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
     Medium: "150",
     High: "200",
   });
+  const [compare, setCompare] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyticsResult | null>(null);
@@ -70,21 +119,24 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
 
     setLoading(true);
     try {
-      const { total, items } = await searchMergedPrs(user, startInput, endInput);
-      const prs: PrEstimate[] = items.map((it) => {
-        const c = suggestComplexity(it);
-        return {
-          repo: repoFromUrl(it.repository_url ?? it.html_url) ?? "unknown",
-          number: it.number,
-          title: it.title,
-          html_url: it.html_url,
-          level: c.level,
-          points: levelPoints[c.level],
-          mergedAt: it.pull_request?.merged_at ?? it.closed_at ?? "",
-        };
-      });
-      prs.sort((a, b) => (a.mergedAt < b.mergedAt ? 1 : -1));
-      setResult({ prs, total, start: startInput, end: endInput });
+      const prevWindow = compare ? previousWindow(startInput, endInput) : null;
+      const [cur, prevRes] = await Promise.all([
+        searchMergedPrs(user, startInput, endInput),
+        prevWindow
+          ? searchMergedPrs(user, prevWindow.start, prevWindow.end)
+          : Promise.resolve(null),
+      ]);
+      const prs = buildPrs(cur.items, levelPoints);
+      const prev =
+        prevWindow && prevRes
+          ? {
+              prs: buildPrs(prevRes.items, levelPoints),
+              total: prevRes.total,
+              start: prevWindow.start,
+              end: prevWindow.end,
+            }
+          : null;
+      setResult({ prs, total: cur.total, start: startInput, end: endInput, prev });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -101,6 +153,17 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
     [result],
   );
   const maxPoints = Math.max(1, ...timeline.map((t) => t.points));
+  const comparison = useMemo(() => {
+    if (!result?.prev || !summary) return null;
+    const prevSummary = summarizePrs(result.prev.prs);
+    const delta = summary.totalPoints - prevSummary.totalPoints;
+    const pct =
+      prevSummary.totalPoints > 0
+        ? Math.round((delta / prevSummary.totalPoints) * 100)
+        : null;
+    return { prevSummary, delta, pct };
+  }, [result, summary]);
+  const maxRepoPoints = summary?.repos[0]?.points ?? 1;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
@@ -154,6 +217,16 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
             {loading ? "Estimating…" : "Estimate points"}
           </button>
         </div>
+
+        <label className="flex w-fit items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={compare}
+            onChange={(e) => setCompare(e.target.checked)}
+            className="h-4 w-4 accent-cyan-500"
+          />
+          Compare with the previous period of the same length
+        </label>
 
         <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <p className="w-full text-xs text-slate-500">
@@ -222,7 +295,60 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
                 {result.prs.length}.
               </p>
             )}
+            {comparison && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-sm">
+                <span className="text-slate-400">
+                  Previous period ({result.prev!.start} → {result.prev!.end}):
+                </span>
+                <span className="font-semibold text-white">
+                  {comparison.prevSummary.totalPoints.toLocaleString()} pts ·{" "}
+                  {result.prev!.prs.length} PR
+                  {result.prev!.prs.length === 1 ? "" : "s"}
+                </span>
+                <span
+                  className={`font-bold ${
+                    comparison.delta >= 0 ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
+                  {comparison.delta >= 0 ? "▲ +" : "▼ "}
+                  {comparison.delta.toLocaleString()} pts
+                  {comparison.pct !== null &&
+                    ` (${comparison.delta >= 0 ? "+" : ""}${comparison.pct}%)`}
+                </span>
+              </div>
+            )}
           </div>
+
+          {summary.repos.length > 0 && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h3 className="font-semibold text-white">
+                Where your points come from
+              </h3>
+              <ul className="mt-4 space-y-3">
+                {summary.repos.slice(0, 10).map((r) => (
+                  <li key={r.repo}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="truncate font-medium text-white">
+                        {r.repo}
+                      </span>
+                      <span className="shrink-0 text-slate-400">
+                        {r.points.toLocaleString()} pts · {r.count} PR
+                        {r.count === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-500"
+                        style={{
+                          width: `${Math.round((r.points / maxRepoPoints) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {timeline.length > 0 && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -260,6 +386,22 @@ export default function Analytics({ onBack }: { onBack: () => void }) {
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 px-4 py-3">
+                <h3 className="font-semibold text-white">
+                  Merged PRs ({result.prs.length})
+                </h3>
+                <button
+                  onClick={() =>
+                    downloadCsv(
+                      result.prs,
+                      `wave-analytics-${username.trim()}-${result.start}-${result.end}.csv`,
+                    )
+                  }
+                  className="rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-300 ring-1 ring-cyan-500/30 transition hover:bg-cyan-500/25"
+                >
+                  ⬇ Download CSV
+                </button>
+              </div>
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-900 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
